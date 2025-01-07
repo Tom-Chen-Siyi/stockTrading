@@ -1,0 +1,161 @@
+/* 统一字体和背景颜色 */
+body {
+    font-family: 'Arial', sans-serif;
+    /* 使用渐变色背景 */
+    background: linear-gradient(135deg, #6e7dff, #ff7b9d);
+    /* 背景图片 */
+    /* background-image: url('your-image-url.jpg'); */
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    height: 100vh;
+    margin: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* 设置标题 */
+h2 {
+    text-align: center;
+    color: #444;
+    margin-top: 30px;
+}
+
+/* 表单容器 */
+label {
+    font-weight: bold;
+    margin-right: 10px;
+}
+
+/* 投资期限选择框、股票代码选择框和初始资本输入框 */
+select, input[type="number"] {
+    padding: 8px;
+    font-size: 14px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    width: 200px;
+    margin-bottom: 10px;
+}
+
+input[type="number"] {
+    width: 220px;
+}
+
+/* 按钮样式 */
+button {
+    background-color: #4CAF50;
+    color: white;
+    font-size: 16px;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    margin-top: 10px;
+}
+
+button:hover {
+    background-color: #45a049;
+}
+
+#next-page-btn {
+    background-color: #1E90FF;
+    margin-top: 20px;
+}
+
+#next-page-btn:hover {
+    background-color: #4682B4;
+}
+
+#home-page-btn {
+    background-color: #1E90FF;
+    margin-top: 20px;
+}
+
+#home-page-btn:hover {
+    background-color: #4682B4;
+}
+
+/* 投资建议显示区域 */
+#investment-advice {
+    margin-top: 20px;
+    background-color: #f0f0f0; /* 修改为浅灰色 */
+    border: 1px solid #ddd;
+    padding: 15px;
+    border-radius: 5px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    color: #333;
+}
+
+/* Trend Chart 样式 */
+canvas {
+    display: block;
+    margin: 30px auto;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+label, select, input[type="number"] {
+    display: inline-block;
+    margin: 10px;
+    vertical-align: middle;
+}
+
+#investment-advice strong {
+    color: #cc0000;
+}
+
+#investment-advice p {
+    margin: 0;
+    line-height: 1.5;
+}
+
+#investment-advice span {
+    color: #0044cc;
+    font-weight: normal;
+}
+
+/* 弹性布局 */
+.container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 20px;
+}
+
+.container button {
+    margin: 10px 0;
+}
+
+#investment-period {
+    margin-right: 10px;
+}
+
+#investment-advice {
+    width: 60%;
+    max-width: 800px;
+    margin: 20px auto;
+    font-size: 16px;
+}
+
+/* 针对小屏幕设备优化 */
+/*@media (max-width: 768px) {*/
+/*    body {*/
+/*        padding: 20px;*/
+/*    }*/
+
+/*    .container {*/
+/*        padding: 10px;*/
+/*    }*/
+
+/*    canvas {*/
+/*        width: 100%;*/
+/*        max-width: 100%;*/
+/*    }*/
+
+/*    input[type="number"], select {*/
+/*        width: 100%;*/
+/*    }*/
+/*}*/

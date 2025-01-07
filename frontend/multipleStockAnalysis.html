@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multiple Stock Portfolio Analysis</title>
+</head>
+<body>
+<h1>Multiple Stock Portfolio Analysis</h1>
+
+<div>
+    <label for="investmentYears">investment horizon:</label>
+    <select id="investmentYears">
+        <option value="1">1 year</option>
+        <option value="2">2 year</option>
+        <option value="5">5 year</option>
+    </select>
+</div>
+
+<!-- 用户选择投资股票数量 -->
+<div>
+    <label for="maxPortfolioSize">the number of stocks you want to invest:</label>
+    <input type="number" id="maxPortfolioSize" value="4" min="1" max="10">
+</div>
+
+<!-- 获取推荐按钮 -->
+<div>
+    <button id="getRecommendationBtn">get stock recommendation</button>
+</div>
+
+<!-- 显示结果 -->
+<div id="recommendation"></div>
+
+
+<label>Select Stock Ticker:</label><br>
+<div id="stock-ticker-container">
+    <!-- 复选框会在这里生成 -->
+</div><br><br>
+
+
+<br>
+<button id="analyze-btn">Analyze Portfolio</button>
+<div id="result">
+    <!-- 显示投资比例结果 -->
+</div>
+<button id="past-page-btn">Go to Single stock analysis</button>
+
+<script>
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        try {
+            // 向后端的 /api/stocks 发送 GET 请求，获取股票数据
+            const response = await fetch('http://localhost:3000/api/stocks', {
+                method: "GET",  // 使用 GET 请求
+                credentials: 'include',  // 如果需要，携带认证信息（如 cookies）
+            });
+
+            // 确保请求成功，检查 response 是否为 2xx
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+
+            // 解析返回的 JSON 数据
+            const result = await response.json();
+
+            // 确保返回的数据结构正确
+            if (result.success) {
+                // 获取股票代码列表
+                const stockList = result.stocks;
+
+                // 获取复选框容器
+                const stockContainer = document.getElementById("stock-ticker-container");
+
+                // 动态生成复选框
+                stockContainer.innerHTML = stockList.map(stock => `
+                <label>
+                    <input type="checkbox" value="${stock}" /> ${stock}
+                </label><br>
+            `).join('');
+            } else {
+                console.error(result.message);
+                alert("Cannot load the ticker");
+            }
+        } catch (error) {
+            console.error("获取股票代码失败：", error);
+            alert("获取股票代码失败，请稍后重试");
+        }
+    });
+
+
+
+    document.getElementById('analyze-btn').addEventListener('click', async () => {
+        try {
+            // 获取用户选择的股票（复选框选中的股票）
+            const selectedStocks = Array.from(document.querySelectorAll('#stock-ticker-container input:checked'))
+                .map(checkbox => checkbox.value);
+
+            // 如果没有选择股票，则提示用户选择至少一个股票
+            if (selectedStocks.length === 0) {
+                alert('Please select at least one stock.');
+                return;
+            }
+
+            // 构造查询字符串，选中的股票用逗号分隔
+            const queryString = selectedStocks.join(',');
+
+            // 向后端发送请求，包含用户选择的股票代码
+            const response = await fetch(`http://localhost:3000/api/multiplestock-analysis?stocks=${queryString}`);
+
+            // 如果请求不成功，抛出错误
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+
+            // 获取后端返回的 JSON 数据
+            const result = await response.json();
+
+            // 检查返回结果
+            if (result.success) {
+                // 获取投资组合的权重比例
+                const portfolioWeights = result.portfolioWeights;
+
+                // 获取结果显示区域
+                const resultDiv = document.getElementById('result');
+
+                // 显示投资比例结果
+                resultDiv.innerHTML = `
+                <h3>Portfolio Weights:</h3>
+                <ul>
+                    ${portfolioWeights.map((weight, index) => `
+                        <li>${selectedStocks[index]}: ${(weight * 100).toFixed(2)}%</li>
+                    `).join('')}
+                </ul>
+            `;
+            } else {
+                console.error(result.message);
+                alert("Failed to analyze the portfolio.");
+            }
+        } catch (error) {
+            // 错误处理
+            console.error("Error analyzing portfolio:", error);
+            alert("Failed to analyze portfolio. Please try again later.");
+        }
+    });
+
+    document.getElementById('getRecommendationBtn').addEventListener('click', async () => {
+        // 获取用户输入的投资年限和股票数量
+        const investmentYears = document.getElementById('investmentYears').value;
+        const maxPortfolioSize = document.getElementById('maxPortfolioSize').value;
+
+        // 调用后端 API 获取股票推荐
+        try {
+            const response = await fetch(`http://localhost:3000/api/portfolio-recommendation?investmentYears=${investmentYears}&maxPortfolioSize=${maxPortfolioSize}`, {
+                method: "GET",  // 使用 GET 请求
+                credentials: 'include',  // 如果需要，携带认证信息（如 cookies）
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                // 显示推荐的股票
+                document.getElementById('recommendation').innerHTML = `
+                <strong>recommended portfolios:</strong>
+                <ul>
+                    ${data.selectedStocks.map(stock => `<li>${stock}</li>`).join('')}
+                </ul>
+            `;
+            } else {
+                // 显示错误信息
+                document.getElementById('recommendation').innerHTML = `<span style="color: red;">${data.message}</span>`;
+            }
+        } catch (error) {
+            // 处理网络请求错误
+            document.getElementById('recommendation').innerHTML = `<span style="color: red;">发生了错误，请稍后再试。</span>`;
+        }
+    });
+    document.getElementById('past-page-btn').addEventListener('click', () => {
+        // 跳转到下一个页面
+        window.location.href = 'index.html'; // 替换为你的目标页面
+    });
+
+
+</script>
+</body>
+</html>

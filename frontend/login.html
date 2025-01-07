@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>stock login</title>
+    <link rel="stylesheet" href="loginStyle.css">
+<!--    <link rel="stylesheet" href="style.css">-->
+</head>
+<body>
+<h1>Welcome to the online stock system. Please register or login</h1>
+
+<!-- 提示信息 -->
+<div id="message"></div>
+
+<!-- 显示登录和注册表单 -->
+<div id="login-form">
+    <h2>login</h2>
+    <label for="login-username">username：</label>
+    <input type="text" id="login-username" placeholder="input username" required>
+    <br>
+    <label for="login-password">password：</label>
+    <input type="password" id="login-password" placeholder="please input password" required>
+    <br>
+    <button id="login-btn">login</button>
+    <p>No account？<button id="show-register">register</button></p>
+</div>
+
+<div id="register-form" style="display: none;">
+    <h2>register</h2>
+    <label for="register-username">username：</label>
+    <input type="text" id="register-username" placeholder="input username" required>
+    <br>
+    <label for="register-password">password：</label>
+    <input type="password" id="register-password" placeholder="input password" required>
+    <br>
+    <button id="register-btn">register</button>
+    <p>Having account？<button id="show-login">login</button></p>
+</div>
+
+
+
+<script src="script.js"></script>
+</body>
+</html>

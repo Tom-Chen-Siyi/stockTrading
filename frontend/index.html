@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Stock Analysis</title>
+    <link rel="stylesheet" href="index.css">
+    <style>
+        /* 设置投资建议为红色字体 */
+        #investment-advice {
+            color: red;
+            font-weight: bold;
+        }
+    </style>
+    <!-- 引入 Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+</head>
+
+<body>
+<h2>Stock Analysis</h2>
+
+<!-- 投资期限选择 -->
+<label for="investment-period">Investment Horizon:</label>
+<select id="investment-period" required>
+    <option value="1">1 Year</option>
+    <option value="2">2 Years</option>
+    <option value="5">5 Years</option>
+</select><br><br>
+
+<!-- 股票代码选择框 -->
+<label for="stock-ticker">Select Stock Ticker:</label>
+<select id="stock-ticker" required>
+    <option value="">Loading...</option>
+</select><br><br>
+
+<!-- 初始投资金额输入框 -->
+<label for="capital">Initial Capital:</label>
+<input type="number" id="capital" placeholder="Enter your initial capital" required><br><br>
+
+<!-- 提交按钮 -->
+<button id="submit-btn">Get Investment Advice</button><br><br>
+
+<!-- 查看趋势图按钮 -->
+<button id="trend-btn">View Trend Chart</button><br><br>
+
+<!-- 投资建议展示区域 -->
+<div id="investment-advice">
+    <!-- 投资建议会显示在这里 -->
+</div>
+
+<!-- 图表展示区域 -->
+<canvas id="trend-chart" style="width: 60%; height: 300px;"></canvas>
+<button id="next-page-btn">Go to multiple stock analysis</button>
+<button id="home-page-btn">Go to login part</button>
+
+<script>
+    document.addEventListener('DOMContentLoaded', async () => {
+        try {
+            // 向后端的 /api/stocks 发送 GET 请求，获取股票数据
+            const response = await fetch('http://localhost:3000/api/stocks', {
+                method: "GET",  // 使用 GET 请求
+                credentials: 'include',  // 如果需要，携带认证信息（如 cookies）
+            });
+
+            // 确保请求成功，检查 response 是否为 2xx
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+
+            // 解析返回的 JSON 数据
+            const result = await response.json();
+
+            // 确保返回的数据结构正确
+            if (result.success) {
+                // 获取股票代码列表
+                const stockList = result.stocks;
+
+                // 获取股票代码选择框
+                const stockSelect = document.getElementById("stock-ticker");
+
+                // 清空加载中的提示，添加股票代码选项
+                stockSelect.innerHTML = stockList.map(stock => `<option value="${stock}">${stock}</option>`).join('');
+            }
+            // else {
+            //     console.error(result.message);
+            //     alert("Cannot load the ticker");
+            // }
+        } catch (error) {
+            console.error("获取股票代码失败：", error);
+            alert("获取股票代码失败，请稍后重试");
+        }
+    });
+
+    // 监听提交按钮点击事件
+    document.getElementById('submit-btn').addEventListener('click', async () => {
+        const investmentPeriod = document.getElementById('investment-period').value;
+        const stockTicker = document.getElementById('stock-ticker').value; // 获取选择的股票代码
+        const initialCapital = parseFloat(document.getElementById('capital').value); // 获取初始资本
+
+        if (!stockTicker) {
+            alert("Please select a stock ticker.");
+            return;
+        }
+
+        if (isNaN(initialCapital) || initialCapital <= 0) {
+            alert("Please enter a valid initial capital.");
+            return;
+        }
+
+        // 向后端请求投资建议
+        try {
+            const response = await fetch(`http://localhost:3000/api/advice?stock=${stockTicker}&period=${investmentPeriod}&capital=${initialCapital}`);
+            const advice = await response.json();
+
+            if (advice.success) {
+                // 显示投资建议和交易策略，并将其显示为红色字体
+                document.getElementById('investment-advice').innerHTML = `
+                    <strong>Investment Strategy:</strong> ${advice.strategy} <br>
+                    <strong>Suggested Trading Frequency:</strong> ${advice.frequency} <br>
+                    <strong>Buy Quantity:</strong> ${advice.buyQuantity} shares <br>
+                `;
+            } else {
+                document.getElementById('investment-advice').innerHTML = 'Could not fetch investment advice.';
+            }
+        } catch (error) {
+            console.error("Error fetching investment advice:", error);
+            alert("Failed to get investment advice.");
+        }
+    });
+
+    // 监听“查看趋势图”按钮点击事件
+    let currentChart = null; // 全局变量保存当前的图表实例
+
+    document.getElementById('trend-btn').addEventListener('click', async () => {
+        const stockTicker = document.getElementById('stock-ticker').value;
+
+        if (!stockTicker) {
+            alert("Please select a stock ticker.");
+            return;
+        }
+
+        // 如果已经存在图表，隐藏图表并销毁实例
+        if (currentChart) {
+            currentChart.destroy(); // 销毁图表实例
+            document.getElementById('trend-chart').style.display = 'none'; // 隐藏图表
+            currentChart = null; // 清空当前图表实例
+
+            // 更新按钮文本为 "View Trend Chart"
+            document.getElementById('trend-btn').textContent = 'View Trend Chart';
+            return; // 如果图表存在，直接退出，不请求数据
+        }
+
+        try {
+            const response = await fetch(`http://localhost:3000/api/stock-trend?stock=${stockTicker}`);
+            const trendData = await response.json();
+
+            if (trendData.success) {
+                const dates = trendData.data.map(item => {
+                    const rawDate = item.date;
+                    return `${rawDate.slice(0, 4)}-${rawDate.slice(4, 6)}-${rawDate.slice(6, 8)}`;
+                });
+                const prices = trendData.data.map(item => item.price);
+
+                // 获取 canvas 上下文
+                const ctx = document.getElementById('trend-chart').getContext('2d');
+
+                // 创建新图表
+                currentChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: dates,
+                        datasets: [{
+                            label: 'Closing Prices',
+                            data: prices,
+                            borderColor: 'rgba(75, 192, 192, 1)',
+                            borderWidth: 2,
+                            fill: false
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: {
+                                display: true,
+                                position: 'top',
+                            },
+                        },
+                        scales: {
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: 'Date',
+                                },
+                                ticks: {
+                                    autoSkip: true, // 自动跳过某些日期
+                                    maxTicksLimit: 10, // 限制最多显示的刻度数量
+                                    callback: function(value, index, ticks) {
+                                        // 仅显示特定间隔的日期（如每隔 5 个日期显示一个）
+                                        if (index % 5 === 0) {
+                                            return this.getLabelForValue(value);
+                                        }
+                                        return null; // 跳过其他刻度
+                                    },
+                                },
+                            },
+                            y: {
+                                title: {
+                                    display: true,
+                                    text: 'Price',
+                                },
+                            },
+                        },
+                    },
+
+                });
+
+                // 显示图表
+                document.getElementById('trend-chart').style.display = 'block';
+
+                // 更新按钮文本为 "Hide Chart"
+                document.getElementById('trend-btn').textContent = 'Hide Chart';
+
+            } else {
+                alert('Failed to fetch trend data.');
+            }
+        } catch (error) {
+            console.error("Error fetching trend data:", error);
+            alert("Failed to get trend data.");
+        }
+    });
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        try {
+            // 向后端的 /api/stocks 发送 GET 请求，获取股票数据
+            const response = await fetch('http://localhost:3000/api/multiplestock-analysis', {
+                method: "GET",  // 使用 GET 请求
+                credentials: 'include',  // 如果需要，携带认证信息（如 cookies）
+            });
+
+            // 确保请求成功，检查 response 是否为 2xx
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+
+            // 解析返回的 JSON 数据
+            const result = await response.json();
+
+            // 确保返回的数据结构正确
+            if (result.success) {
+                // 获取股票代码列表
+                const stockList = result.stocks;
+
+                // 获取股票代码选择框
+                const stockSelect = document.getElementById("stock-ticker");
+
+                // 清空加载中的提示，添加股票代码选项
+                stockSelect.innerHTML = stockList.map(stock => `<option value="${stock}">${stock}</option>`).join('');
+            }
+        } catch (error) {
+            console.error("获取股票代码失败：", error);
+            alert("获取股票代码失败，请稍后重试");
+        }
+    });
+    document.getElementById('next-page-btn').addEventListener('click', () => {
+        // 跳转到下一个页面
+        window.location.href = 'multipleStockAnalysis.html'; // 替换为你的目标页面
+    });
+
+    document.getElementById('home-page-btn').addEventListener('click', () => {
+        // 跳转到下一个页面
+        window.location.href = 'login.html'; // 替换为你的目标页面
+    });
+
+</script>
+
+</body>
+</html>
